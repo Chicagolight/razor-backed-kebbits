@@ -91,4 +91,15 @@ public interface RazorKebbitConfig extends Config {
 	default boolean dynamicMenuEntrySwap() {
 		return true;
 	}
+
+	@ConfigItem(
+		position = 8,
+		keyName = "warnRingOfPursuitMissing",
+		name = "Missing Ring of Pursuit",
+		description = "Indicate when a Ring of Pursuit isn't worn."
+	)
+	default boolean warnRingOfPursuitMissing() {
+		return false;
+	}
+
 }

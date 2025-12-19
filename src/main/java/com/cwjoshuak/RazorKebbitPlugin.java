@@ -10,6 +10,9 @@ import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.gameval.InventoryID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.config.ConfigManager;
@@ -60,9 +63,9 @@ public class RazorKebbitPlugin extends Plugin {
 	);
 
 	private static final Set<Integer> START_OBJECT_IDS = ImmutableSet.of(
-			ObjectID.BURROW,
-			ObjectID.BURROW_19580,
-			ObjectID.BURROW_19579
+			ObjectID.HUNTING_TRAIL_SPAWN1,
+			ObjectID.HUNTING_TRAIL_SPAWN2,
+			ObjectID.HUNTING_TRAIL_SPAWN3
 	);
 
 	private static final Integer RAZOR_KEBBIT_REGION = 9272;
@@ -153,7 +156,7 @@ public class RazorKebbitPlugin extends Plugin {
 	}
 
 	private boolean checkArea() {
-		final int[] mapRegions = client.getMapRegions();
+		final int[] mapRegions = client.getTopLevelWorldView().getMapRegions();
 		return ArrayUtils.contains(mapRegions, RAZOR_KEBBIT_REGION);
 	}
 
@@ -223,7 +226,7 @@ public class RazorKebbitPlugin extends Plugin {
 		for (String menuTarget : TRAIL_MENU_ENTRY_TARGETS) {
 			if (target.contains(menuTarget)) {
 				MenuEntry entry = event.getMenuEntry();
-				WorldPoint entryTargetPoint = WorldPoint.fromScene(client, entry.getParam0(), entry.getParam1(), client.getPlane());
+				WorldPoint entryTargetPoint = WorldPoint.fromScene(client.getTopLevelWorldView(), entry.getParam0(), entry.getParam1(), client.getTopLevelWorldView().getPlane());
 
 				if (finishId == 0) {
 					if (currentPath.isEmpty() && burrows.get(entryTargetPoint) == null) {
@@ -235,7 +238,7 @@ public class RazorKebbitPlugin extends Plugin {
 					if (!END_LOCATIONS.contains(entryTargetPoint)) {
 						entry.setDeprioritized(true);
 					} else {
-						if (!entry.getOption().equals("Attack")) {
+						if (!"Attack".equals(entry.getOption())) {
 							entry.setDeprioritized(true);
 						}
 					}
@@ -244,6 +247,18 @@ public class RazorKebbitPlugin extends Plugin {
 				return;
 			}
 		}
+	}
+
+	boolean isWearingRingOfPursuit()
+	{
+		ItemContainer eq = client.getItemContainer(InventoryID.WORN);
+		if (eq == null)
+		{
+			return false;
+		}
+
+		int ringItemId = eq.getItems()[EquipmentInventorySlot.RING.getSlotIdx()].getId();
+		return ringItemId == ItemID.RING_OF_PURSUIT;
 	}
 
 

@@ -7,23 +7,32 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Shape;
+import java.awt.Rectangle;
 
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.ui.overlay.*;
 import net.runelite.client.util.ColorUtil;
 
+import java.awt.image.BufferedImage;
+import net.runelite.api.gameval.ItemID;
+import net.runelite.client.game.ItemManager;
+
+
 class RazorKebbitOverlay extends Overlay {
 	private final RazorKebbitPlugin plugin;
 	private final RazorKebbitConfig config;
 
+	private final ItemManager itemManager;
+
 
 	@Inject
-	public RazorKebbitOverlay(RazorKebbitPlugin plugin, RazorKebbitConfig config) {
+	public RazorKebbitOverlay(RazorKebbitPlugin plugin, RazorKebbitConfig config, ItemManager itemManager) {
 		setPosition(OverlayPosition.DYNAMIC);
 		setLayer(OverlayLayer.ABOVE_SCENE);
 		this.plugin = plugin;
 		this.config = config;
+		this.itemManager = itemManager;
 	}
 
 	@Override
@@ -34,8 +43,25 @@ class RazorKebbitOverlay extends Overlay {
 		int finishId = plugin.getFinishId();
 
 		// Draw start objects
-		if (config.isStartShown() && (finishId == 0) && plugin.getCurrentPath().isEmpty()) {
-			plugin.getBurrows().values().forEach((obj) -> OverlayUtil.renderTileOverlay(graphics, obj, "", config.getStartColor()));
+		if (config.isStartShown() && finishId == 0 && plugin.getCurrentPath().isEmpty()) {
+			boolean warnMissing =
+					config.warnRingOfPursuitMissing() && !plugin.isWearingRingOfPursuit();
+
+			Color color = warnMissing
+					? Color.RED
+					: config.getStartColor();
+
+			BufferedImage ringIcon = warnMissing
+					? itemManager.getImage(ItemID.RING_OF_PURSUIT)
+					: null;
+
+			plugin.getBurrows().values().forEach(obj -> {
+				OverlayUtil.renderTileOverlay(graphics, obj, "", color);
+
+				if (ringIcon != null) {
+					drawIconOnObject(graphics, obj, ringIcon);
+				}
+			});
 		}
 
 		// Draw trail objects
@@ -74,4 +100,22 @@ class RazorKebbitOverlay extends Overlay {
 			OverlayUtil.renderTileOverlay(graphics, object, "", color);
 		}
 	}
+
+	private void drawIconOnObject(Graphics2D graphics, TileObject object, BufferedImage icon) {
+		if (object == null || icon == null) {
+			return;
+		}
+
+		Shape clickbox = object.getClickbox();
+		if (clickbox == null) {
+			return;
+		}
+
+		Rectangle bounds = clickbox.getBounds();
+		int x = (int) bounds.getCenterX() - icon.getWidth() / 2;
+		int y = (int) bounds.getCenterY() - icon.getHeight() / 2;
+
+		graphics.drawImage(icon, x, y, null);
+	}
+
 }
